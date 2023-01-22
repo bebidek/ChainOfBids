@@ -10,21 +10,13 @@ mod chain_of_bids {
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
     mod auction;
-    use auction::Auction;
+    use auction::{Auction, AuctionCreationError};
 
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct ChainOfBids {
         number_of_auctions: u64,
         auctions: Mapping<u64, Auction>
-    }
-
-    #[derive(scale::Encode, scale::Decode)]
-    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
-    pub enum AuctionCreatingError {
-        InvalidNameLength,
-        InvalidDescriptionLength,
-        InvalidEndPeriod
     }
 
     impl ChainOfBids {
@@ -35,37 +27,22 @@ mod chain_of_bids {
             })
         }
         
-        
         // auction list management
         #[ink(message)]
-        pub fn create_new_auction(&mut self, name: String, description: String, end_period_start: Timestamp, end_period_stop: Timestamp) -> Result<u64, AuctionCreatingError> {
-            let caller = Self::env().caller();
-            
-            // verify input correctness
-            if !(1..65).contains(&name.len()) {
-                return Err(AuctionCreatingError::InvalidNameLength);
-            } 
-            if !(0..4097).contains(&description.len()) {
-                return Err(AuctionCreatingError::InvalidDescriptionLength);
-            }
-            if end_period_stop < end_period_start {
-                return Err(AuctionCreatingError::InvalidEndPeriod);
-            }
-            
-            // create auction entry
-            let auction = Auction {
-                name,
-                description,
-                owner: caller,
-
-                finished: false,
-                end_period_start,
-                end_period_stop
-            };
+        pub fn create_new_auction(
+            &mut self,
+            name: String,
+            description: String,
+            end_period_start: Timestamp,
+            end_period_stop: Timestamp
+        ) -> Result<u64, AuctionCreationError> {
+            // make action entry (with validation)
+            let auction = Auction::new(name, description, Self::env().caller(), end_period_start, end_period_stop)?;
             let auction_id = self.number_of_auctions;
+
+            // add new entry to the storage
             self.auctions.insert(auction_id, &auction);
             self.number_of_auctions += 1;
-            
             Ok(auction_id)
         }
         

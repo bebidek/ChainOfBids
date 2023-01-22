@@ -15,7 +15,46 @@ pub struct Auction {
     pub end_period_stop: Timestamp // after that moment, the auction is concidered finished (no matter what)
 }
 
+#[derive(scale::Encode, scale::Decode)]
+#[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+pub enum AuctionCreationError {
+    InvalidNameLength,
+    InvalidDescriptionLength,
+    InvalidEndPeriod
+}
+
 impl Auction {
+    // this constructor should be used instead of raw { }
+    pub fn new(
+        name: String,
+        description: String,
+        owner: AccountId,
+        end_period_start: Timestamp,
+        end_period_stop: Timestamp
+    ) -> Result<Self, AuctionCreationError> {
+        // verify input correctness
+        if !(1..65).contains(&name.len()) {
+            return Err(AuctionCreationError::InvalidNameLength);
+        } 
+        if !(0..4097).contains(&description.len()) {
+            return Err(AuctionCreationError::InvalidDescriptionLength);
+        }
+        if end_period_stop < end_period_start {
+            return Err(AuctionCreationError::InvalidEndPeriod);
+        }
+        
+        // create auction
+        Ok(Auction {
+            name,
+            description,
+            owner,
+
+            finished: false,
+            end_period_start,
+            end_period_stop
+        })
+    }
+
     pub fn is_finished(&mut self, current_time: Timestamp) -> bool {
         // if already finished, just return that
         if self.finished {
