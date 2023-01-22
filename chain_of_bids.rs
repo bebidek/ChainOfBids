@@ -10,7 +10,7 @@ mod chain_of_bids {
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
     mod auction;
-    use auction::{Auction, AuctionCreationError, bidding::{Bid, BiddingError}};
+    use auction::{Auction, AuctionCreationError, AuctionManualFinishError, bidding::{Bid, BiddingError}};
 
     #[ink(storage)]
     #[derive(SpreadAllocate)]
@@ -20,6 +20,12 @@ mod chain_of_bids {
         bids: Mapping<(u64, u64), Bid>   // (auction_id, bid_id) -> Auction
     }
 
+    #[derive(scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum QueryError {
+        InvalidAuctionId
+    }
+    
     impl ChainOfBids {
         #[ink(constructor)]
         pub fn new() -> Self {
@@ -28,7 +34,13 @@ mod chain_of_bids {
             })
         }
         
-        // auction list management
+
+        // auction list management / getters
+        #[ink(message)]
+        pub fn get_number_of_auctions(&self) -> u64 {
+            self.number_of_auctions
+        }
+
         #[ink(message)]
         pub fn create_new_auction(
             &mut self,
@@ -47,11 +59,36 @@ mod chain_of_bids {
             Ok(auction_id)
         }
         
+        
+        // auction management / getters
         #[ink(message)]
-        pub fn get_number_of_auctions(&self) -> u64 {
-            self.number_of_auctions
+        pub fn get_auction_name(&self, auction_id: u64) -> Result<String, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.name)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_description(&self, auction_id: u64) -> Result<String, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.description)
+        }
+
+        #[ink(message)]
+        pub fn manually_finish(&mut self, auction_id: u64) -> Result<(), AuctionManualFinishError> {
+            // find proper auction
+            let mut auction = self.auctions.get(auction_id).ok_or(AuctionManualFinishError::InvalidAuctionId)?;
+            
+            // finnish the auction
+            let caller = Self::env().caller();
+            let current_time = Self::env().block_timestamp();
+            auction.manual_finish(current_time, caller)?;
+
+            // save to structures
+            self.auctions.insert(auction_id, &auction);
+            Ok(())
         }
         
+
         // bidding
         #[ink(message, payable)]
         pub fn make_a_bid(&mut self, auction_id: u64) -> Result<u64, BiddingError> {

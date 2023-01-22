@@ -26,6 +26,16 @@ pub enum AuctionCreationError {
     InvalidEndPeriod
 }
 
+
+#[derive(scale::Encode, scale::Decode)]
+#[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+pub enum AuctionManualFinishError {
+    InvalidAuctionId,
+    AuctionIsAlreadyFinished,
+    TooEarlyToFinish,
+    CallerIsNotOwner
+}
+
 impl Auction {
     // this constructor should be used instead of raw { }
     pub fn new(
@@ -74,6 +84,23 @@ impl Auction {
         
         // otherwise, the auction is still active
         return false;
+    }
+    
+    pub fn manual_finish(&mut self, current_time: Timestamp, caller: AccountId) -> Result<(), AuctionManualFinishError> {
+        if self.is_finished(current_time) {
+            return Err(AuctionManualFinishError::AuctionIsAlreadyFinished);
+        }
+        
+        if current_time < self.end_period_start {
+            return Err(AuctionManualFinishError::TooEarlyToFinish);
+        }
+        
+        if caller != self.owner {
+            return Err(AuctionManualFinishError::CallerIsNotOwner);
+        }
+
+        self.finished = true;
+        Ok(())
     }
 }
 
