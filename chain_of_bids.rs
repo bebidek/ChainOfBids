@@ -10,13 +10,14 @@ mod chain_of_bids {
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
     mod auction;
-    use auction::{Auction, AuctionCreationError};
+    use auction::{Auction, AuctionCreationError, bidding::{Bid, BiddingError}};
 
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct ChainOfBids {
         number_of_auctions: u64,
-        auctions: Mapping<u64, Auction>
+        auctions: Mapping<u64, Auction>, // auction_id -> Auction
+        bids: Mapping<(u64, u64), Bid>   // (auction_id, bid_id) -> Auction
     }
 
     impl ChainOfBids {
@@ -49,6 +50,27 @@ mod chain_of_bids {
         #[ink(message)]
         pub fn get_number_of_auctions(&self) -> u64 {
             self.number_of_auctions
+        }
+        
+        // bidding
+        #[ink(message, payable)]
+        pub fn make_a_bid(&mut self, auction_id: u64) -> Result<u64, BiddingError> {
+            // find proper auction
+            let mut auction = self.auctions.get(auction_id).ok_or(BiddingError::InvalidAuctionId)?;
+
+            // create (and validate) the new bid
+            let caller = Self::env().caller();
+            let price = Self::env().transferred_value();
+            let current_time = Self::env().block_timestamp();
+            let bid = Bid::make(&mut auction, caller, price, current_time)?;
+
+            // add to structures
+            let bid_id = auction.number_of_bids;
+            auction.number_of_bids += 1;
+            self.auctions.insert(auction_id, &auction);
+            self.bids.insert((auction_id, bid_id), &bid);
+
+            Ok(bid_id)
         }
     }
 }

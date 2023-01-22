@@ -12,7 +12,10 @@ pub struct Auction {
     // status / timing data
     pub finished: bool,
     pub end_period_start: Timestamp, // before that moment, the auction cannot be finished
-    pub end_period_stop: Timestamp // after that moment, the auction is concidered finished (no matter what)
+    pub end_period_stop: Timestamp, // after that moment, the auction is concidered finished (no matter what)
+    
+    // bids
+    pub number_of_bids: u64
 }
 
 #[derive(scale::Encode, scale::Decode)]
@@ -51,7 +54,9 @@ impl Auction {
 
             finished: false,
             end_period_start,
-            end_period_stop
+            end_period_stop,
+
+            number_of_bids: 0
         })
     }
 
@@ -71,3 +76,5 @@ impl Auction {
         return false;
     }
 }
+
+pub mod bidding;
