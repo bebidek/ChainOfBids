@@ -11,7 +11,9 @@ pub struct Bid {
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum BiddingError {
     InvalidAuctionId,
-    AuctionIsAlreadyFinished
+    InvalidBidId,
+    AuctionIsAlreadyFinished,
+    CallerIsNotOriginalBidder
 }
 
 impl Bid {

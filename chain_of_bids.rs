@@ -36,11 +36,6 @@ mod chain_of_bids {
                 contract.number_of_auctions = 0;
             })
         }
-
-        #[ink(message)]
-        pub fn get_current_time(&self) -> Timestamp {
-            return Self::env().block_timestamp();
-        }
         
 
         // auction list management / getters
@@ -152,6 +147,28 @@ mod chain_of_bids {
             self.bids.insert((auction_id, bid_id), &bid);
 
             Ok(bid_id)
+        }
+        
+        #[ink(message, payable)]
+        pub fn increase_the_bid(&mut self, auction_id: u64, bid_id: u64) -> Result<(), BiddingError> {
+            // find proper auction and bid
+            let mut auction = self.auctions.get(auction_id).ok_or(BiddingError::InvalidAuctionId)?;
+            let mut bid = self.bids.get((auction_id, bid_id)).ok_or(BiddingError::InvalidBidId)?;
+            
+            // check whether operation is possible
+            if auction.is_finished(Self::env().block_timestamp()) {
+                return Err(BiddingError::AuctionIsAlreadyFinished);
+            }
+            if bid.bidder != Self::env().caller() {
+                return Err(BiddingError::CallerIsNotOriginalBidder);
+            }
+            
+            // increase the bid
+            let additional_price = Self::env().transferred_value();
+            bid.price += additional_price;
+            self.bids.insert((auction_id, bid_id), &bid);
+                
+            Ok(())
         }
     }
 }
