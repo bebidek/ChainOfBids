@@ -15,6 +15,10 @@ mod chain_of_bids {
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct ChainOfBids {
+        fee_denominator: u64, 
+        fee_balance: Balance,
+        owner: AccountId,
+
         number_of_auctions: u64,
         auctions: Mapping<u64, Auction>, // auction_id -> Auction
         bids: Mapping<(u64, u64), Bid>   // (auction_id, bid_id) -> Auction
@@ -23,20 +27,42 @@ mod chain_of_bids {
     #[derive(scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub enum QueryError {
-        InvalidAuctionId
+        InvalidAuctionId,
+        InvalidAuctionOrBidId
     }
     
     // messages
     impl ChainOfBids {
+        // contract management / getters
         #[ink(constructor)]
-        pub fn new() -> Self {
-            ink_env::debug_println!("{}", "Initial timestamp = ");
-            ink_env::debug_println!("{}", Self::env().block_timestamp().to_string());
+        pub fn new(fee_denominator: u64) -> Self {
+            if fee_denominator == 0 {
+                panic!("Invalid denominator");
+            }
+
             ink_lang::utils::initialize_contract(|contract: &mut Self| {
+                contract.fee_denominator = fee_denominator;
+                contract.owner = Self::env().caller();
                 contract.number_of_auctions = 0;
             })
         }
         
+        #[ink(message)]
+        pub fn get_fee_denominator(&self) -> u64 {
+            self.fee_denominator
+        }
+        
+        #[ink(message)]
+        pub fn collect_fees(&mut self) -> Result<(),()> {
+            let caller = Self::env().caller();
+            if caller != self.owner {
+                return Err(())
+            }
+            
+            if Self::env().transfer(caller, self.fee_balance).is_err() { panic!(); }
+            self.fee_balance = 0;
+            Ok(())
+        }
 
         // auction list management / getters
         #[ink(message)]
@@ -74,6 +100,36 @@ mod chain_of_bids {
         pub fn get_auction_description(&self, auction_id: u64) -> Result<String, QueryError> {
             let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
             Ok(auction.description)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_owner(&self, auction_id: u64) -> Result<AccountId, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.owner)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_finalization_status(&self, auction_id: u64) -> Result<bool, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.finalized)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_end_period_start(&self, auction_id: u64) -> Result<Timestamp, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.end_period_start)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_end_period_end(&self, auction_id: u64) -> Result<Timestamp, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.end_period_stop)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_number_of_bids(&self, auction_id: u64) -> Result<u64, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.number_of_bids)
         }
 
         #[ink(message)]
@@ -128,7 +184,19 @@ mod chain_of_bids {
         }
         
 
-        // bidding
+        // bids
+        #[ink(message)]
+        pub fn get_bid_price(&self, auction_id: u64, bid_id: u64) -> Result<Balance, QueryError> {
+            let bid = self.bids.get((auction_id, bid_id)).ok_or(QueryError::InvalidAuctionOrBidId)?;
+            Ok(bid.price)
+        }
+
+        #[ink(message)]
+        pub fn get_bid_bidder(&self, auction_id: u64, bid_id: u64) -> Result<AccountId, QueryError> {
+            let bid = self.bids.get((auction_id, bid_id)).ok_or(QueryError::InvalidAuctionOrBidId)?;
+            Ok(bid.bidder)
+        }
+        
         #[ink(message, payable)]
         pub fn make_a_bid(&mut self, auction_id: u64) -> Result<u64, BiddingError> {
             // find proper auction

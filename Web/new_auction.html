@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./src/bundle-polkadot-util.js"></script>
+        <script src="./src/bundle-polkadot-util-crypto.js"></script>
+        <script src="./src/bundle-polkadot-keyring.js"></script>
+        <script src="./src/bundle-polkadot-types.js"></script>
+        <script src="./src/bundle-polkadot-api.js"></script>
+        <script src="./src/bundle-polkadot-api-contract.js"></script>
+        <script src="./src/bundle-polkadot-extension-dapp.js"></script>
+        <script src="./src/metadata.js"></script>
+        <script src="./src/common.js"></script>
+        <script src="./src/index.js"></script>
+        <title>ChainOfBids UI</title>
+    </head>
+    <body>
+        <h1>ChainOfBids</h1>
+        <h2>New auction</h2>
+        <hr />
+        <form id="new_auction_form">
+            <table>
+                <tr>
+                    <td>Name </td>
+                    <td><input id="name" type="text" maxlength="64" minlength="1" /></td>
+                </tr>
+                <tr>
+                    <td>Description </td>
+                    <td><input id="desc" type="text" maxlength="4096" /></td>
+                </tr>
+                <tr>
+                    <td>Finish period </td>
+                    <td>
+                        <input id="finish_from" type="datetime-local" />
+                        to
+                        <input id="finish_to" type="datetime-local" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>Sender </td>
+                    <td><input id="sender" type="text" /></td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="button" value="Utwórz aukcję" onclick="new_auction()" />
+                        <span id="status"></span>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

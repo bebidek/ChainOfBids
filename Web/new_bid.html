@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./src/bundle-polkadot-util.js"></script>
+        <script src="./src/bundle-polkadot-util-crypto.js"></script>
+        <script src="./src/bundle-polkadot-keyring.js"></script>
+        <script src="./src/bundle-polkadot-types.js"></script>
+        <script src="./src/bundle-polkadot-api.js"></script>
+        <script src="./src/bundle-polkadot-api-contract.js"></script>
+        <script src="./src/bundle-polkadot-extension-dapp.js"></script>
+        <script src="./src/metadata.js"></script>
+        <script src="./src/common.js"></script>
+        <script src="./src/index.js"></script>
+        <title>ChainOfBids UI</title>
+    </head>
+    <body onload="new_bid_init()">
+        <h1>ChainOfBids</h1>
+        <h2 id="subtitle"></h2>
+        <hr />
+        <form id="new_bid_form">
+            <table>
+                <tr>
+                    <td>Price </td>
+                    <td><input id="sender" type="number" /></td>
+                </tr>
+                <tr>
+                    <td>Sender </td>
+                    <td><input id="sender" type="text" /></td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="button" value="Make a bid" onclick="new_bid()" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

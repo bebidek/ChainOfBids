@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./src/bundle-polkadot-util.js"></script>
+        <script src="./src/bundle-polkadot-util-crypto.js"></script>
+        <script src="./src/bundle-polkadot-keyring.js"></script>
+        <script src="./src/bundle-polkadot-types.js"></script>
+        <script src="./src/bundle-polkadot-api.js"></script>
+        <script src="./src/bundle-polkadot-api-contract.js"></script>
+        <script src="./src/metadata.js"></script>
+        <script src="./src/common.js"></script>
+        <script src="./src/index.js"></script>
+        <title>ChainOfBids UI</title>
+    </head>
+    <body onload="index_init()">
+        <h1>ChainOfBids</h1>
+        <hr />
+        <a href="new_auction.html">New auction</a><br />
+        <div id="auctions">
+
+        </div>
+        <!-- <a onclick="go_to_auction_prompt()">Go to auction</a><br /> -->
+        <hr />
+        Auctions in the system: <span id="auction_number"></span>
+    </body>
+</html>
