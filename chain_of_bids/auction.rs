@@ -10,7 +10,7 @@ pub struct Auction {
     pub owner: AccountId,
 
     // status / timing data
-    pub finished: bool,
+    pub finalized: bool, // finalized means that all funds have been transfered to bidders / owner
     pub end_period_start: Timestamp, // before that moment, the auction cannot be finished
     pub end_period_stop: Timestamp, // after that moment, the auction is concidered finished (no matter what)
     
@@ -29,9 +29,9 @@ pub enum AuctionCreationError {
 
 #[derive(scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
-pub enum AuctionManualFinishError {
+pub enum AuctionFinalizationError {
     InvalidAuctionId,
-    AuctionIsAlreadyFinished,
+    AuctionIsAlreadyFinalized,
     TooEarlyToFinish,
     CallerIsNotOwner
 }
@@ -62,7 +62,7 @@ impl Auction {
             description,
             owner,
 
-            finished: false,
+            finalized: false,
             end_period_start,
             end_period_stop,
 
@@ -71,36 +71,18 @@ impl Auction {
     }
 
     pub fn is_finished(&mut self, current_time: Timestamp) -> bool {
-        // if already finished, just return that
-        if self.finished {
+        // if already finalized, finished
+        if self.finalized {
             return true;
         }
         
-        // if absolute finishing time has passed, set to finished
+        // if finishing time has passed, finished
         if self.end_period_stop < current_time {
-            self.finished = true;
             return true;
         }
         
         // otherwise, the auction is still active
         return false;
-    }
-    
-    pub fn manual_finish(&mut self, current_time: Timestamp, caller: AccountId) -> Result<(), AuctionManualFinishError> {
-        if self.is_finished(current_time) {
-            return Err(AuctionManualFinishError::AuctionIsAlreadyFinished);
-        }
-        
-        if current_time < self.end_period_start {
-            return Err(AuctionManualFinishError::TooEarlyToFinish);
-        }
-        
-        if caller != self.owner {
-            return Err(AuctionManualFinishError::CallerIsNotOwner);
-        }
-
-        self.finished = true;
-        Ok(())
     }
 }
 

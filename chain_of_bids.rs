@@ -10,7 +10,7 @@ mod chain_of_bids {
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
     mod auction;
-    use auction::{Auction, AuctionCreationError, AuctionManualFinishError, bidding::{Bid, BiddingError}};
+    use auction::{Auction, AuctionCreationError, AuctionFinalizationError, bidding::{Bid, BiddingError}};
 
     #[ink(storage)]
     #[derive(SpreadAllocate)]
@@ -26,12 +26,20 @@ mod chain_of_bids {
         InvalidAuctionId
     }
     
+    // messages
     impl ChainOfBids {
         #[ink(constructor)]
         pub fn new() -> Self {
+            ink_env::debug_println!("{}", "Initial timestamp = ");
+            ink_env::debug_println!("{}", Self::env().block_timestamp().to_string());
             ink_lang::utils::initialize_contract(|contract: &mut Self| {
                 contract.number_of_auctions = 0;
             })
+        }
+
+        #[ink(message)]
+        pub fn get_current_time(&self) -> Timestamp {
+            return Self::env().block_timestamp();
         }
         
 
@@ -74,17 +82,53 @@ mod chain_of_bids {
         }
 
         #[ink(message)]
-        pub fn manually_finish(&mut self, auction_id: u64) -> Result<(), AuctionManualFinishError> {
-            // find proper auction
-            let mut auction = self.auctions.get(auction_id).ok_or(AuctionManualFinishError::InvalidAuctionId)?;
-            
-            // finnish the auction
-            let caller = Self::env().caller();
+        pub fn finalize_auction(&mut self, auction_id: u64) -> Result<(), AuctionFinalizationError> {
+            // get auction
+            let mut auction = self.auctions.get(auction_id).ok_or(AuctionFinalizationError::InvalidAuctionId)?;
             let current_time = Self::env().block_timestamp();
-            auction.manual_finish(current_time, caller)?;
+            
+            // check whether finalization is possible
+            if auction.finalized {
+                return Err(AuctionFinalizationError::AuctionIsAlreadyFinalized);
+            }
+            if current_time < auction.end_period_start {
+                return Err(AuctionFinalizationError::TooEarlyToFinish);
+            }
+            if current_time <= auction.end_period_stop && Self::env().caller() != auction.owner {
+                return Err(AuctionFinalizationError::CallerIsNotOwner);
+            }
 
-            // save to structures
+            // mark as finalized
+            auction.finalized = true;
             self.auctions.insert(auction_id, &auction);
+            
+            // if no bids were made, there's nothing else to do
+            if auction.number_of_bids == 0 {
+                return Ok(())
+            }
+            
+            // find highest bid
+            let mut highest_bid_id = 0;
+            let mut highest_bid = self.bids.get((auction_id, 0)).unwrap();
+            for i in 1..auction.number_of_bids {
+                let bid = self.bids.get((auction_id, i)).unwrap();
+                if bid.price > highest_bid.price {
+                    highest_bid_id = i;
+                    highest_bid = bid;
+                }
+            }
+            
+            // transfer the money back to the loosers
+            for i in 0..auction.number_of_bids {
+                if i != highest_bid_id {
+                    let bid = self.bids.get((auction_id, i)).unwrap();
+                    if Self::env().transfer(bid.bidder, bid.price).is_err() { panic!(); }
+                }
+            }
+            
+            // transfer the winner's money to auction owner
+            if Self::env().transfer(auction.owner, highest_bid.price).is_err() { panic!(); }
+
             Ok(())
         }
         

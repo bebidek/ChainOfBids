@@ -3,8 +3,8 @@ use super::*;
 #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub struct Bid {
-    bidder: AccountId,
-    price: Balance
+    pub bidder: AccountId,
+    pub price: Balance
 }
 
 #[derive(scale::Encode, scale::Decode)]
