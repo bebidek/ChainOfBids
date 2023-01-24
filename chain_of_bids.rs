@@ -203,8 +203,10 @@ mod chain_of_bids {
                 }
             }
             
-            // transfer the winner's money to auction owner
-            if Self::env().transfer(auction.owner, highest_bid.price).is_err() { panic!(); }
+            // transfer the winner's money to auction owner (minus fee)
+            let fee = highest_bid.price / self.fee_denominator as u128;
+            if Self::env().transfer(auction.owner, highest_bid.price - fee).is_err() { panic!(); }
+            self.fee_balance += fee;
 
             Ok(())
         }
