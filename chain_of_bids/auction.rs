@@ -33,10 +33,12 @@ pub enum AuctionCreationError {
 #[derive(scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub enum AuctionFinalizationError {
+    DummyError,
     InvalidAuctionId,
     AuctionIsAlreadyFinalized,
     TooEarlyToFinish,
-    CallerIsNotOwner
+    CallerIsNotOwner,
+    InvalidForefrontVector
 }
 
 impl Auction {

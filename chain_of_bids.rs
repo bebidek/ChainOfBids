@@ -157,13 +157,13 @@ mod chain_of_bids {
             let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
             Ok(auction.number_of_bids)
         }
-
+        
         #[ink(message)]
-        pub fn finalize_auction(&mut self, auction_id: u64) -> Result<(), AuctionFinalizationError> {
+        pub fn finalize_auction(&mut self, auction_id: u64, forefront: ink_prelude::vec::Vec<u64>) -> Result<(), AuctionFinalizationError> {
             // get auction
             let mut auction = self.auctions.get(auction_id).ok_or(AuctionFinalizationError::InvalidAuctionId)?;
             let current_time = Self::env().block_timestamp();
-            
+
             // check whether finalization is possible
             if auction.finalized {
                 return Err(AuctionFinalizationError::AuctionIsAlreadyFinalized);
@@ -174,43 +174,71 @@ mod chain_of_bids {
             if current_time <= auction.end_period_stop && Self::env().caller() != auction.owner {
                 return Err(AuctionFinalizationError::CallerIsNotOwner);
             }
-
-            // mark as finalized
+            
+            // greater means here: more important (higher unit price or earlier)
+            fn bid_less_than(bid1: &Bid, bid1_i: u64, bid2: &Bid, bid2_i: u64) -> bool {
+                if bid1.price / (bid1.amount as u128) != bid2.price / (bid2.amount as u128) {
+                    return bid1.price / (bid1.amount as u128) < bid2.price / (bid2.amount as u128);
+                } else {
+                    return bid1_i > bid2_i;
+                }
+            }
+            
+            // perform money transfers for forefront
+            // also, verify forefront list: check whether they are sorted in strictly decreasing order
+            let mut items_left = auction.amount;
+            let mut last_bid: Option<Bid> = None;
+            
+            for i in 0..forefront.len() {
+                // get this bid
+                let bid_id = forefront[i];
+                if !(0..auction.number_of_bids).contains(&bid_id) {
+                    return Err(AuctionFinalizationError::InvalidForefrontVector);
+                }
+                let this_bid = self.bids.get((auction_id, bid_id)).ok_or(AuctionFinalizationError::InvalidForefrontVector)?;
+                
+                // verify order
+                if last_bid.is_some() && !bid_less_than(&this_bid, bid_id, &last_bid.unwrap(), forefront[i - 1]) {
+                    return Err(AuctionFinalizationError::InvalidForefrontVector);
+                }
+                
+                // transfer the money
+                if this_bid.amount <= items_left { // it's a winner
+                    items_left -= this_bid.amount;
+                    let fee = this_bid.price / self.fee_denominator as u128;
+                    if Self::env().transfer(auction.owner, this_bid.price - fee).is_err() { panic!(); }
+                    self.fee_balance += fee;
+                } else { // it's a looser
+                    if Self::env().transfer(this_bid.bidder, this_bid.price).is_err() { panic!(); }
+                }
+                
+                // save for next iterations
+                last_bid = Some(this_bid);
+            }
+            
+            // verify that all other (non-forefront) are smaller and that they lost (and give them tyey money back)
+            let mut greater_or_equal_left = forefront.len();
+            
+            for i in 0..auction.number_of_bids {
+                let this_bid = self.bids.get((auction_id, i)).ok_or(AuctionFinalizationError::DummyError)?;
+                if last_bid.is_some() && !bid_less_than(&this_bid, i, last_bid.as_ref().unwrap(), forefront[forefront.len() - 1]) {
+                    if greater_or_equal_left == 0 {
+                        return Err(AuctionFinalizationError::InvalidForefrontVector);
+                    }
+                    greater_or_equal_left -= 1;
+                } else if this_bid.amount <= items_left {
+                    return Err(AuctionFinalizationError::InvalidForefrontVector);
+                } else {
+                    if Self::env().transfer(this_bid.bidder, this_bid.price).is_err() { panic!(); }
+                }
+            }
+            
+            // update auction structure
             auction.finalized = true;
             self.auctions.insert(auction_id, &auction);
-            
-            // if no bids were made, there's nothing else to do
-            if auction.number_of_bids == 0 {
-                return Ok(())
-            }
-            
-            // find highest bid
-            let mut highest_bid_id = 0;
-            let mut highest_bid = self.bids.get((auction_id, 0)).unwrap();
-            for i in 1..auction.number_of_bids {
-                let bid = self.bids.get((auction_id, i)).unwrap();
-                if bid.price > highest_bid.price {
-                    highest_bid_id = i;
-                    highest_bid = bid;
-                }
-            }
-            
-            // transfer the money back to the loosers
-            for i in 0..auction.number_of_bids {
-                if i != highest_bid_id {
-                    let bid = self.bids.get((auction_id, i)).unwrap();
-                    if Self::env().transfer(bid.bidder, bid.price).is_err() { panic!(); }
-                }
-            }
-            
-            // transfer the winner's money to auction owner (minus fee)
-            let fee = highest_bid.price / self.fee_denominator as u128;
-            if Self::env().transfer(auction.owner, highest_bid.price - fee).is_err() { panic!(); }
-            self.fee_balance += fee;
 
             Ok(())
         }
-        
 
         // bids
         #[ink(message)]
