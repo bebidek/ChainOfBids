@@ -53,6 +53,11 @@ mod chain_of_bids {
         }
         
         #[ink(message)]
+        pub fn get_fee_balance(&self) -> Balance {
+            self.fee_balance
+        }
+        
+        #[ink(message)]
         pub fn collect_fees(&mut self) -> Result<(),()> {
             let caller = Self::env().caller();
             if caller != self.owner {
@@ -75,14 +80,16 @@ mod chain_of_bids {
             &mut self,
             name: String,
             description: String,
+            start_time: Timestamp,
             end_period_start: Timestamp,
-            end_period_stop: Timestamp
+            end_period_stop: Timestamp,
+            starting_price: Balance
         ) -> Result<u64, AuctionCreationError> {
-            // make action entry (with validation)
-            let auction = Auction::new(name, description, Self::env().caller(), end_period_start, end_period_stop)?;
+            // delegate
+            let auction = Auction::new(name, description, Self::env().caller(), start_time, end_period_start, end_period_stop, starting_price)?;
             let auction_id = self.number_of_auctions;
 
-            // add new entry to the storage
+            // insert into structures
             self.auctions.insert(auction_id, &auction);
             self.number_of_auctions += 1;
             Ok(auction_id)
@@ -115,6 +122,12 @@ mod chain_of_bids {
         }
 
         #[ink(message)]
+        pub fn get_auction_start_time(&self, auction_id: u64) -> Result<Timestamp, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.start_time)
+        }
+
+        #[ink(message)]
         pub fn get_auction_end_period_start(&self, auction_id: u64) -> Result<Timestamp, QueryError> {
             let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
             Ok(auction.end_period_start)
@@ -124,6 +137,12 @@ mod chain_of_bids {
         pub fn get_auction_end_period_end(&self, auction_id: u64) -> Result<Timestamp, QueryError> {
             let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
             Ok(auction.end_period_stop)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_starting_price(&self, auction_id: u64) -> Result<Balance, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.starting_price)
         }
 
         #[ink(message)]
@@ -202,14 +221,11 @@ mod chain_of_bids {
             // find proper auction
             let mut auction = self.auctions.get(auction_id).ok_or(BiddingError::InvalidAuctionId)?;
 
-            // create (and validate) the new bid
-            let caller = Self::env().caller();
-            let price = Self::env().transferred_value();
-            let current_time = Self::env().block_timestamp();
-            let bid = Bid::make(&mut auction, caller, price, current_time)?;
-
-            // add to structures
+            // delegate
+            let bid = Bid::make(&mut auction, Self::env().caller(), Self::env().transferred_value(), Self::env().block_timestamp())?;
             let bid_id = auction.number_of_bids;
+
+            // insert into structures
             auction.number_of_bids += 1;
             self.auctions.insert(auction_id, &auction);
             self.bids.insert((auction_id, bid_id), &bid);
@@ -220,20 +236,11 @@ mod chain_of_bids {
         #[ink(message, payable)]
         pub fn increase_the_bid(&mut self, auction_id: u64, bid_id: u64) -> Result<(), BiddingError> {
             // find proper auction and bid
-            let mut auction = self.auctions.get(auction_id).ok_or(BiddingError::InvalidAuctionId)?;
+            let auction = self.auctions.get(auction_id).ok_or(BiddingError::InvalidAuctionId)?;
             let mut bid = self.bids.get((auction_id, bid_id)).ok_or(BiddingError::InvalidBidId)?;
             
-            // check whether operation is possible
-            if auction.is_finished(Self::env().block_timestamp()) {
-                return Err(BiddingError::AuctionIsAlreadyFinished);
-            }
-            if bid.bidder != Self::env().caller() {
-                return Err(BiddingError::CallerIsNotOriginalBidder);
-            }
-            
-            // increase the bid
-            let additional_price = Self::env().transferred_value();
-            bid.price += additional_price;
+            // delegate and insert
+            bid.increase(&auction, Self::env().transferred_value(), Self::env().caller(), Self::env().block_timestamp())?;
             self.bids.insert((auction_id, bid_id), &bid);
                 
             Ok(())

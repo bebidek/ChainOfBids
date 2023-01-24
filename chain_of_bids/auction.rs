@@ -11,10 +11,12 @@ pub struct Auction {
 
     // status / timing data
     pub finalized: bool, // finalized means that all funds have been transfered to bidders / owner
+    pub start_time: Timestamp,       // before that moment, bidding is not possible
     pub end_period_start: Timestamp, // before that moment, the auction cannot be finished
     pub end_period_stop: Timestamp, // after that moment, the auction is concidered finished (no matter what)
     
     // bids
+    pub starting_price: Balance,
     pub number_of_bids: u64
 }
 
@@ -42,14 +44,16 @@ impl Auction {
         name: String,
         description: String,
         owner: AccountId,
+        start_time: Timestamp,
         end_period_start: Timestamp,
-        end_period_stop: Timestamp
+        end_period_stop: Timestamp,
+        starting_price: Balance
     ) -> Result<Self, AuctionCreationError> {
         // verify input correctness
-        if !(1..65).contains(&name.len()) {
+        if !(1..=64).contains(&name.len()) {
             return Err(AuctionCreationError::InvalidNameLength);
         } 
-        if !(0..4097).contains(&description.len()) {
+        if !(0..=4096).contains(&description.len()) {
             return Err(AuctionCreationError::InvalidDescriptionLength);
         }
         if end_period_stop < end_period_start {
@@ -63,26 +67,34 @@ impl Auction {
             owner,
 
             finalized: false,
+            start_time,
             end_period_start,
             end_period_stop,
 
-            number_of_bids: 0
+            number_of_bids: 0,
+            starting_price
         })
     }
 
-    pub fn is_finished(&mut self, current_time: Timestamp) -> bool {
-        // if already finalized, finished
+    pub fn is_active(&self, current_time: Timestamp) -> bool {
+        // active means that bidding is possible
+        
+        // if auction has not started yet
+        if current_time < self.start_time {
+            return false;
+        }
+        
+        // if auction has already ended (because of timeout)
+        if current_time > self.end_period_stop {
+            return false;
+        }
+        
+        // if auction is already finalized (including manually finished by owner)
         if self.finalized {
-            return true;
+            return false;
         }
         
-        // if finishing time has passed, finished
-        if self.end_period_stop < current_time {
-            return true;
-        }
-        
-        // otherwise, the auction is still active
-        return false;
+        return true;
     }
 }
 

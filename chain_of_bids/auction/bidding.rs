@@ -12,16 +12,39 @@ pub struct Bid {
 pub enum BiddingError {
     InvalidAuctionId,
     InvalidBidId,
-    AuctionIsAlreadyFinished,
-    CallerIsNotOriginalBidder
+    AuctionIsNotActiveNow,
+    CallerIsNotOriginalBidder,
+    BidBelowStartingPrice
 }
 
 impl Bid {
-    pub fn make(auction: &mut Auction, bidder: AccountId, price: Balance, current_time: Timestamp) -> Result<Self, BiddingError> {
-        if auction.is_finished(current_time) {
-            return Err(BiddingError::AuctionIsAlreadyFinished);
+    pub fn make(auction: &Auction, bidder: AccountId, price: Balance, current_time: Timestamp) -> Result<Self, BiddingError> {
+        // verify operation corectness
+        if !auction.is_active(current_time) {
+            return Err(BiddingError::AuctionIsNotActiveNow);
         }
-        
+        if price < auction.starting_price {
+            return Err(BiddingError::BidBelowStartingPrice);
+        }
+
         Ok(Bid {bidder, price})
     }
+    
+    pub fn increase(&mut self, auction: &Auction, extra_price: Balance, caller: AccountId, current_time: Timestamp) -> Result<(), BiddingError> {
+        // verify operation corectness
+        if !auction.is_active(current_time) {
+            return Err(BiddingError::AuctionIsNotActiveNow);
+        }
+        if caller != self.bidder {
+            return Err(BiddingError::CallerIsNotOriginalBidder);
+        }
+        
+        // increase the offer
+        self.price += extra_price;
+        Ok(())
+    }
+}
+
+impl ChainOfBids {
+    
 }
