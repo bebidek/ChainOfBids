@@ -26,14 +26,14 @@ impl Bid {
         if !auction.is_active(current_time) {
             return Err(BiddingError::AuctionIsNotActiveNow);
         }
-        if price < auction.starting_price {
-            return Err(BiddingError::BidBelowStartingPrice);
-        }
         if !(1..=auction.amount).contains(&amount) {
             return Err(BiddingError::ZeroOrTooMany);
         }
         if price % amount as u128 != 0 {
             return Err(BiddingError::FractionalUnitPrice);
+        }
+        if price / (amount as u128) < auction.starting_price {
+            return Err(BiddingError::BidBelowStartingPrice);
         }
 
         Ok(Bid {bidder, price, amount})

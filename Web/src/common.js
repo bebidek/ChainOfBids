@@ -1,4 +1,4 @@
-const contract_address = "5DEEs7C5HiYaFUaUodVvnwwxG8Dyif8uSmvbhbMqESvxfzJf";
+const contract_address = "5Cp6nPR1duyzy2F8H2mt1v5CJnmjtHsAmNwscZWzBuFETJKH";
 
 const { WsProvider, ApiPromise } = polkadotApi;
 const { ContractPromise } = polkadotApiContract;

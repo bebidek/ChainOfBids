@@ -157,7 +157,8 @@ mod chain_of_bids {
             let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
             Ok(auction.number_of_bids)
         }
-        
+       
+        // that function is here because it need access to Self multiple times
         #[ink(message)]
         pub fn finalize_auction(&mut self, auction_id: u64, forefront: ink_prelude::vec::Vec<u64>) -> Result<(), AuctionFinalizationError> {
             // get auction
@@ -175,6 +176,7 @@ mod chain_of_bids {
                 return Err(AuctionFinalizationError::CallerIsNotOwner);
             }
             
+            // bid comparison function
             // greater means here: more important (higher unit price or earlier)
             fn bid_less_than(bid1: &Bid, bid1_i: u64, bid2: &Bid, bid2_i: u64) -> bool {
                 if bid1.price / (bid1.amount as u128) != bid2.price / (bid2.amount as u128) {
@@ -184,7 +186,7 @@ mod chain_of_bids {
                 }
             }
             
-            // perform money transfers for forefront
+            // perform money transfers for forefront bids
             // also, verify forefront list: check whether they are sorted in strictly decreasing order
             let mut items_left = auction.amount;
             let mut last_bid: Option<Bid> = None;
@@ -197,7 +199,7 @@ mod chain_of_bids {
                 }
                 let this_bid = self.bids.get((auction_id, bid_id)).ok_or(AuctionFinalizationError::InvalidForefrontVector)?;
                 
-                // verify order
+                // verify decreasing order
                 if last_bid.is_some() && !bid_less_than(&this_bid, bid_id, &last_bid.unwrap(), forefront[i - 1]) {
                     return Err(AuctionFinalizationError::InvalidForefrontVector);
                 }
@@ -216,19 +218,23 @@ mod chain_of_bids {
                 last_bid = Some(this_bid);
             }
             
-            // verify that all other (non-forefront) are smaller and that they lost (and give them tyey money back)
+            // verify that all other (non-forefront) bids are smaller and that they lost (and give them they money back)
             let mut greater_or_equal_left = forefront.len();
             
             for i in 0..auction.number_of_bids {
                 let this_bid = self.bids.get((auction_id, i)).ok_or(AuctionFinalizationError::DummyError)?;
+
                 if last_bid.is_some() && !bid_less_than(&this_bid, i, last_bid.as_ref().unwrap(), forefront[forefront.len() - 1]) {
+                    // this bid is (or at least should be) among forefronts
                     if greater_or_equal_left == 0 {
                         return Err(AuctionFinalizationError::InvalidForefrontVector);
                     }
                     greater_or_equal_left -= 1;
                 } else if this_bid.amount <= items_left {
+                    // this bid could also be realised
                     return Err(AuctionFinalizationError::InvalidForefrontVector);
                 } else {
+                    // this bid is looser and that's correct
                     if Self::env().transfer(this_bid.bidder, this_bid.price).is_err() { panic!(); }
                 }
             }

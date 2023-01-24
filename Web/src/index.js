@@ -6,7 +6,7 @@ async function index_init() {
     document.getElementById("auction_number").innerText = output;
 
     var { output } = await contract.query.getFeeDenominator(0, {});
-    document.getElementById("auction_fee").innerText = 100 / (output + 20) + "%";
+    document.getElementById("auction_fee").innerText = 100 / output + "%";
     
     for (var i = 0; i < number_of_auctions; i++) {
         const link = document.createElement("a");
@@ -29,6 +29,8 @@ async function auction_init() {
     document.getElementById("name").innerText = output.asOk;
     var { output } = await contract.query.getAuctionOwner(0, {}, auction_id);
     document.getElementById("owner").innerText = "Created by " + output.asOk;
+    var { output } = await contract.query.getAuctionAmount(0, {}, auction_id);
+    document.getElementById("amount").innerText = "Amount of items: " + output.asOk;
     var { output } = await contract.query.getAuctionStartTime(0, {}, auction_id);
     document.getElementById("start_time").innerText = "Starting time: " + new Date(output.asOk.toNumber());
     var { output } = await contract.query.getAuctionEndPeriodStart(0, {}, auction_id);
@@ -66,12 +68,14 @@ async function auction_init() {
         const td4 = document.createElement("td");
         const increase_link = document.createElement("a");
         increase_link.href = "increase_bid.html?auction_id=" + auction_id + "&bid_id=" + i;
+        increase_link.innerText = "Increase";
         td4.appendChild(increase_link);
 
         const tr = document.createElement("tr");
         tr.appendChild(td1);
         tr.appendChild(td2);
         tr.appendChild(td3);
+        tr.appendChild(td4);
 
         document.getElementById("bids").appendChild(tr);
     }
@@ -150,14 +154,14 @@ async function increase_bid() {
     await init_contract();
     const web3FromAddress = await init_ext();
 
-    const { gasRequired } = await contract.query.increaseTheBid(0, { value: price }, auction_id, bid_id);
+    const { gasRequired } = await contract.query.increaseTheBid(0, { value: extra_price }, auction_id, bid_id);
 
     const injector = await web3FromAddress(sender)
 
     const gasLimit = gasRequired * 2;
     const storageDepositLimit = null;
     contract.tx
-        .increaseTheBid({ value: price, storageDepositLimit, gasLimit }, auction_id, bid_id)
+        .increaseTheBid({ value: extra_price, storageDepositLimit, gasLimit }, auction_id, bid_id)
         .signAndSend(sender, { signer: injector.signer }, ({status, events}) => {
             if (status.isOk) { 
                 alert("OK");
@@ -189,19 +193,22 @@ async function finalize_auction() {
     const auction_id = S_GET("auction_id");
 
     var values = Object.values(document.forms.finalize_auction_form)
-    const sender = values[0].value;
+    const forefront_string = values[0].value;
+    const sender = values[1].value;
+    
+    const forefront = forefront_string.split(" ").map( Number )
     
     await init_contract();
     const web3FromAddress = await init_ext();
 
-    const { gasRequired } = await contract.query.finalizeAuction(0, {}, auction_id);
+    const { gasRequired } = await contract.query.finalizeAuction(0, {}, auction_id, forefront);
 
     const injector = await web3FromAddress(sender)
 
     const gasLimit = gasRequired * 2;
     const storageDepositLimit = null;
     contract.tx
-        .finalizeAuction({ storageDepositLimit, gasLimit }, auction_id)
+        .finalizeAuction({ storageDepositLimit, gasLimit }, auction_id, forefront)
         .signAndSend(sender, { signer: injector.signer }, ({status, events}) => {
             if (status.isOk) { 
                 alert("OK");
@@ -241,6 +248,15 @@ async function new_auction() {
     const finish_to = Date.parse(values[5].value);
     const starting_price = values[6].value;
     const sender = values[7].value;
+    
+    console.log(name);
+    console.log(description);
+    console.log(amount);
+    console.log(start_time);
+    console.log(finish_from);
+    console.log(finish_to);
+    console.log(starting_price);
+    console.log(sender);
     
     await init_contract();
     const web3FromAddress = await init_ext();

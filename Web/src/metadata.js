@@ -1,6 +1,6 @@
 metadata = {
   "source": {
-    "hash": "0x13591396dfe7c9f9e8b31fa36000f7665df0255ccf6bf92599129351870c4c4d",
+    "hash": "0xc6417556a6175bab3a22c5bb7390314203804371e4ad47c961825f206cb24b50",
     "language": "ink! 3.4.0",
     "compiler": "rustc 1.68.0-nightly"
   },
@@ -52,6 +52,20 @@ metadata = {
         {
           "args": [],
           "docs": [],
+          "label": "get_fee_balance",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Balance"
+            ],
+            "type": 1
+          },
+          "selector": "0x901fa036"
+        },
+        {
+          "args": [],
+          "docs": [],
           "label": "collect_fees",
           "mutates": true,
           "payable": false,
@@ -98,6 +112,24 @@ metadata = {
               }
             },
             {
+              "label": "amount",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "label": "start_time",
+              "type": {
+                "displayName": [
+                  "Timestamp"
+                ],
+                "type": 0
+              }
+            },
+            {
               "label": "end_period_start",
               "type": {
                 "displayName": [
@@ -113,6 +145,15 @@ metadata = {
                   "Timestamp"
                 ],
                 "type": 0
+              }
+            },
+            {
+              "label": "starting_price",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 1
               }
             }
           ],
@@ -213,7 +254,7 @@ metadata = {
             }
           ],
           "docs": [],
-          "label": "get_auction_finalization_status",
+          "label": "get_auction_amount",
           "mutates": false,
           "payable": false,
           "returnType": {
@@ -222,7 +263,55 @@ metadata = {
             ],
             "type": 20
           },
+          "selector": "0x3425ecd4"
+        },
+        {
+          "args": [
+            {
+              "label": "auction_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "label": "get_auction_finalization_status",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 21
+          },
           "selector": "0x97901be2"
+        },
+        {
+          "args": [
+            {
+              "label": "auction_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "label": "get_auction_start_time",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 20
+          },
+          "selector": "0xa6969e1a"
         },
         {
           "args": [
@@ -244,7 +333,7 @@ metadata = {
             "displayName": [
               "Result"
             ],
-            "type": 21
+            "type": 20
           },
           "selector": "0x58f167ff"
         },
@@ -268,9 +357,33 @@ metadata = {
             "displayName": [
               "Result"
             ],
-            "type": 21
+            "type": 20
           },
           "selector": "0xc276fcb6"
+        },
+        {
+          "args": [
+            {
+              "label": "auction_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "label": "get_auction_starting_price",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 22
+          },
+          "selector": "0xd3a1faf1"
         },
         {
           "args": [
@@ -292,7 +405,7 @@ metadata = {
             "displayName": [
               "Result"
             ],
-            "type": 21
+            "type": 20
           },
           "selector": "0xea522d56"
         },
@@ -306,6 +419,17 @@ metadata = {
                 ],
                 "type": 0
               }
+            },
+            {
+              "label": "forefront",
+              "type": {
+                "displayName": [
+                  "ink_prelude",
+                  "vec",
+                  "Vec"
+                ],
+                "type": 23
+              }
             }
           ],
           "docs": [],
@@ -316,42 +440,9 @@ metadata = {
             "displayName": [
               "Result"
             ],
-            "type": 22
-          },
-          "selector": "0x28dd27b4"
-        },
-        {
-          "args": [
-            {
-              "label": "auction_id",
-              "type": {
-                "displayName": [
-                  "u64"
-                ],
-                "type": 0
-              }
-            },
-            {
-              "label": "bid_id",
-              "type": {
-                "displayName": [
-                  "u64"
-                ],
-                "type": 0
-              }
-            }
-          ],
-          "docs": [],
-          "label": "get_bid_price",
-          "mutates": false,
-          "payable": false,
-          "returnType": {
-            "displayName": [
-              "Result"
-            ],
             "type": 24
           },
-          "selector": "0xd3d8d991"
+          "selector": "0x28dd27b4"
         },
         {
           "args": [
@@ -396,6 +487,81 @@ metadata = {
                 ],
                 "type": 0
               }
+            },
+            {
+              "label": "bid_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "label": "get_bid_price",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 22
+          },
+          "selector": "0xd3d8d991"
+        },
+        {
+          "args": [
+            {
+              "label": "auction_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "label": "bid_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "label": "get_bid_amount",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 20
+          },
+          "selector": "0xeece14c8"
+        },
+        {
+          "args": [
+            {
+              "label": "auction_id",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "label": "amount",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
             }
           ],
           "docs": [],
@@ -406,7 +572,7 @@ metadata = {
             "displayName": [
               "Result"
             ],
-            "type": 25
+            "type": 26
           },
           "selector": "0x2fc44a04"
         },
@@ -439,7 +605,7 @@ metadata = {
             "displayName": [
               "Result"
             ],
-            "type": 27
+            "type": 28
           },
           "selector": "0xa33f41f1"
         }
@@ -615,9 +781,19 @@ metadata = {
                   "typeName": "AccountId"
                 },
                 {
+                  "name": "amount",
+                  "type": 0,
+                  "typeName": "u64"
+                },
+                {
                   "name": "finalized",
                   "type": 8,
                   "typeName": "bool"
+                },
+                {
+                  "name": "start_time",
+                  "type": 0,
+                  "typeName": "Timestamp"
                 },
                 {
                   "name": "end_period_start",
@@ -628,6 +804,11 @@ metadata = {
                   "name": "end_period_stop",
                   "type": 0,
                   "typeName": "Timestamp"
+                },
+                {
+                  "name": "starting_price",
+                  "type": 1,
+                  "typeName": "Balance"
                 },
                 {
                   "name": "number_of_bids",
@@ -738,6 +919,11 @@ metadata = {
                   "name": "price",
                   "type": 1,
                   "typeName": "Balance"
+                },
+                {
+                  "name": "amount",
+                  "type": 0,
+                  "typeName": "u64"
                 }
               ]
             }
@@ -989,48 +1175,6 @@ metadata = {
                 {
                   "fields": [
                     {
-                      "type": 8
-                    }
-                  ],
-                  "index": 0,
-                  "name": "Ok"
-                },
-                {
-                  "fields": [
-                    {
-                      "type": 18
-                    }
-                  ],
-                  "index": 1,
-                  "name": "Err"
-                }
-              ]
-            }
-          },
-          "params": [
-            {
-              "name": "T",
-              "type": 8
-            },
-            {
-              "name": "E",
-              "type": 18
-            }
-          ],
-          "path": [
-            "Result"
-          ]
-        }
-      },
-      {
-        "id": 21,
-        "type": {
-          "def": {
-            "variant": {
-              "variants": [
-                {
-                  "fields": [
-                    {
                       "type": 0
                     }
                   ],
@@ -1065,7 +1209,7 @@ metadata = {
         }
       },
       {
-        "id": 22,
+        "id": 21,
         "type": {
           "def": {
             "variant": {
@@ -1073,7 +1217,7 @@ metadata = {
                 {
                   "fields": [
                     {
-                      "type": 14
+                      "type": 8
                     }
                   ],
                   "index": 0,
@@ -1082,7 +1226,7 @@ metadata = {
                 {
                   "fields": [
                     {
-                      "type": 23
+                      "type": 18
                     }
                   ],
                   "index": 1,
@@ -1094,11 +1238,11 @@ metadata = {
           "params": [
             {
               "name": "T",
-              "type": 14
+              "type": 8
             },
             {
               "name": "E",
-              "type": 23
+              "type": 18
             }
           ],
           "path": [
@@ -1107,40 +1251,7 @@ metadata = {
         }
       },
       {
-        "id": 23,
-        "type": {
-          "def": {
-            "variant": {
-              "variants": [
-                {
-                  "index": 0,
-                  "name": "InvalidAuctionId"
-                },
-                {
-                  "index": 1,
-                  "name": "AuctionIsAlreadyFinalized"
-                },
-                {
-                  "index": 2,
-                  "name": "TooEarlyToFinish"
-                },
-                {
-                  "index": 3,
-                  "name": "CallerIsNotOwner"
-                }
-              ]
-            }
-          },
-          "path": [
-            "chain_of_bids",
-            "chain_of_bids",
-            "auction",
-            "AuctionFinalizationError"
-          ]
-        }
-      },
-      {
-        "id": 24,
+        "id": 22,
         "type": {
           "def": {
             "variant": {
@@ -1182,83 +1293,17 @@ metadata = {
         }
       },
       {
-        "id": 25,
+        "id": 23,
         "type": {
           "def": {
-            "variant": {
-              "variants": [
-                {
-                  "fields": [
-                    {
-                      "type": 0
-                    }
-                  ],
-                  "index": 0,
-                  "name": "Ok"
-                },
-                {
-                  "fields": [
-                    {
-                      "type": 26
-                    }
-                  ],
-                  "index": 1,
-                  "name": "Err"
-                }
-              ]
-            }
-          },
-          "params": [
-            {
-              "name": "T",
+            "sequence": {
               "type": 0
-            },
-            {
-              "name": "E",
-              "type": 26
             }
-          ],
-          "path": [
-            "Result"
-          ]
+          }
         }
       },
       {
-        "id": 26,
-        "type": {
-          "def": {
-            "variant": {
-              "variants": [
-                {
-                  "index": 0,
-                  "name": "InvalidAuctionId"
-                },
-                {
-                  "index": 1,
-                  "name": "InvalidBidId"
-                },
-                {
-                  "index": 2,
-                  "name": "AuctionIsAlreadyFinished"
-                },
-                {
-                  "index": 3,
-                  "name": "CallerIsNotOriginalBidder"
-                }
-              ]
-            }
-          },
-          "path": [
-            "chain_of_bids",
-            "chain_of_bids",
-            "auction",
-            "bidding",
-            "BiddingError"
-          ]
-        }
-      },
-      {
-        "id": 27,
+        "id": 24,
         "type": {
           "def": {
             "variant": {
@@ -1275,7 +1320,7 @@ metadata = {
                 {
                   "fields": [
                     {
-                      "type": 26
+                      "type": 25
                     }
                   ],
                   "index": 1,
@@ -1291,7 +1336,178 @@ metadata = {
             },
             {
               "name": "E",
-              "type": 26
+              "type": 25
+            }
+          ],
+          "path": [
+            "Result"
+          ]
+        }
+      },
+      {
+        "id": 25,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "index": 0,
+                  "name": "DummyError"
+                },
+                {
+                  "index": 1,
+                  "name": "InvalidAuctionId"
+                },
+                {
+                  "index": 2,
+                  "name": "AuctionIsAlreadyFinalized"
+                },
+                {
+                  "index": 3,
+                  "name": "TooEarlyToFinish"
+                },
+                {
+                  "index": 4,
+                  "name": "CallerIsNotOwner"
+                },
+                {
+                  "index": 5,
+                  "name": "InvalidForefrontVector"
+                }
+              ]
+            }
+          },
+          "path": [
+            "chain_of_bids",
+            "chain_of_bids",
+            "auction",
+            "AuctionFinalizationError"
+          ]
+        }
+      },
+      {
+        "id": 26,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "fields": [
+                    {
+                      "type": 0
+                    }
+                  ],
+                  "index": 0,
+                  "name": "Ok"
+                },
+                {
+                  "fields": [
+                    {
+                      "type": 27
+                    }
+                  ],
+                  "index": 1,
+                  "name": "Err"
+                }
+              ]
+            }
+          },
+          "params": [
+            {
+              "name": "T",
+              "type": 0
+            },
+            {
+              "name": "E",
+              "type": 27
+            }
+          ],
+          "path": [
+            "Result"
+          ]
+        }
+      },
+      {
+        "id": 27,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "index": 0,
+                  "name": "InvalidAuctionId"
+                },
+                {
+                  "index": 1,
+                  "name": "InvalidBidId"
+                },
+                {
+                  "index": 2,
+                  "name": "AuctionIsNotActiveNow"
+                },
+                {
+                  "index": 3,
+                  "name": "CallerIsNotOriginalBidder"
+                },
+                {
+                  "index": 4,
+                  "name": "BidBelowStartingPrice"
+                },
+                {
+                  "index": 5,
+                  "name": "ZeroOrTooMany"
+                },
+                {
+                  "index": 6,
+                  "name": "FractionalUnitPrice"
+                }
+              ]
+            }
+          },
+          "path": [
+            "chain_of_bids",
+            "chain_of_bids",
+            "auction",
+            "bidding",
+            "BiddingError"
+          ]
+        }
+      },
+      {
+        "id": 28,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "fields": [
+                    {
+                      "type": 14
+                    }
+                  ],
+                  "index": 0,
+                  "name": "Ok"
+                },
+                {
+                  "fields": [
+                    {
+                      "type": 27
+                    }
+                  ],
+                  "index": 1,
+                  "name": "Err"
+                }
+              ]
+            }
+          },
+          "params": [
+            {
+              "name": "T",
+              "type": 14
+            },
+            {
+              "name": "E",
+              "type": 27
             }
           ],
           "path": [
