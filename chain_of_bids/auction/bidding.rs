@@ -4,7 +4,8 @@ use super::*;
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub struct Bid {
     pub bidder: AccountId,
-    pub price: Balance
+    pub price: Balance,
+    pub amount: u64
 }
 
 #[derive(scale::Encode, scale::Decode)]
@@ -14,11 +15,13 @@ pub enum BiddingError {
     InvalidBidId,
     AuctionIsNotActiveNow,
     CallerIsNotOriginalBidder,
-    BidBelowStartingPrice
+    BidBelowStartingPrice,
+    ZeroOrTooMany,
+    FractionalUnitPrice
 }
 
 impl Bid {
-    pub fn make(auction: &Auction, bidder: AccountId, price: Balance, current_time: Timestamp) -> Result<Self, BiddingError> {
+    pub fn make(auction: &Auction, bidder: AccountId, price: Balance, amount: u64, current_time: Timestamp) -> Result<Self, BiddingError> {
         // verify operation corectness
         if !auction.is_active(current_time) {
             return Err(BiddingError::AuctionIsNotActiveNow);
@@ -26,8 +29,14 @@ impl Bid {
         if price < auction.starting_price {
             return Err(BiddingError::BidBelowStartingPrice);
         }
+        if !(1..=auction.amount).contains(&amount) {
+            return Err(BiddingError::ZeroOrTooMany);
+        }
+        if price % amount as u128 != 0 {
+            return Err(BiddingError::FractionalUnitPrice);
+        }
 
-        Ok(Bid {bidder, price})
+        Ok(Bid {bidder, price, amount})
     }
     
     pub fn increase(&mut self, auction: &Auction, extra_price: Balance, caller: AccountId, current_time: Timestamp) -> Result<(), BiddingError> {
@@ -37,6 +46,9 @@ impl Bid {
         }
         if caller != self.bidder {
             return Err(BiddingError::CallerIsNotOriginalBidder);
+        }
+        if extra_price % self.amount as u128 != 0 {
+            return Err(BiddingError::FractionalUnitPrice);
         }
         
         // increase the offer

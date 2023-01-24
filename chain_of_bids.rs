@@ -80,13 +80,14 @@ mod chain_of_bids {
             &mut self,
             name: String,
             description: String,
+            amount: u64,
             start_time: Timestamp,
             end_period_start: Timestamp,
             end_period_stop: Timestamp,
             starting_price: Balance
         ) -> Result<u64, AuctionCreationError> {
             // delegate
-            let auction = Auction::new(name, description, Self::env().caller(), start_time, end_period_start, end_period_stop, starting_price)?;
+            let auction = Auction::new(name, description, Self::env().caller(), amount, start_time, end_period_start, end_period_stop, starting_price)?;
             let auction_id = self.number_of_auctions;
 
             // insert into structures
@@ -113,6 +114,12 @@ mod chain_of_bids {
         pub fn get_auction_owner(&self, auction_id: u64) -> Result<AccountId, QueryError> {
             let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
             Ok(auction.owner)
+        }
+
+        #[ink(message)]
+        pub fn get_auction_amount(&self, auction_id: u64) -> Result<u64, QueryError> {
+            let auction = self.auctions.get(auction_id).ok_or(QueryError::InvalidAuctionId)?;
+            Ok(auction.amount)
         }
 
         #[ink(message)]
@@ -205,24 +212,30 @@ mod chain_of_bids {
 
         // bids
         #[ink(message)]
+        pub fn get_bid_bidder(&self, auction_id: u64, bid_id: u64) -> Result<AccountId, QueryError> {
+            let bid = self.bids.get((auction_id, bid_id)).ok_or(QueryError::InvalidAuctionOrBidId)?;
+            Ok(bid.bidder)
+        }
+
+        #[ink(message)]
         pub fn get_bid_price(&self, auction_id: u64, bid_id: u64) -> Result<Balance, QueryError> {
             let bid = self.bids.get((auction_id, bid_id)).ok_or(QueryError::InvalidAuctionOrBidId)?;
             Ok(bid.price)
         }
 
         #[ink(message)]
-        pub fn get_bid_bidder(&self, auction_id: u64, bid_id: u64) -> Result<AccountId, QueryError> {
+        pub fn get_bid_amount(&self, auction_id: u64, bid_id: u64) -> Result<u64, QueryError> {
             let bid = self.bids.get((auction_id, bid_id)).ok_or(QueryError::InvalidAuctionOrBidId)?;
-            Ok(bid.bidder)
+            Ok(bid.amount)
         }
         
         #[ink(message, payable)]
-        pub fn make_a_bid(&mut self, auction_id: u64) -> Result<u64, BiddingError> {
+        pub fn make_a_bid(&mut self, auction_id: u64, amount: u64) -> Result<u64, BiddingError> {
             // find proper auction
             let mut auction = self.auctions.get(auction_id).ok_or(BiddingError::InvalidAuctionId)?;
 
             // delegate
-            let bid = Bid::make(&mut auction, Self::env().caller(), Self::env().transferred_value(), Self::env().block_timestamp())?;
+            let bid = Bid::make(&mut auction, Self::env().caller(), Self::env().transferred_value(), amount, Self::env().block_timestamp())?;
             let bid_id = auction.number_of_bids;
 
             // insert into structures

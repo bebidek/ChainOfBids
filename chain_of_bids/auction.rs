@@ -8,6 +8,7 @@ pub struct Auction {
     pub name: String,
     pub description: String,
     pub owner: AccountId,
+    pub amount: u64,
 
     // status / timing data
     pub finalized: bool, // finalized means that all funds have been transfered to bidders / owner
@@ -44,6 +45,7 @@ impl Auction {
         name: String,
         description: String,
         owner: AccountId,
+        amount: u64,
         start_time: Timestamp,
         end_period_start: Timestamp,
         end_period_stop: Timestamp,
@@ -65,6 +67,7 @@ impl Auction {
             name,
             description,
             owner,
+            amount,
 
             finalized: false,
             start_time,

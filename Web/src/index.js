@@ -60,9 +60,13 @@ async function auction_init() {
         td2.innerText = output.asOk;
 
         const td3 = document.createElement("td");
+        var { output } = await contract.query.getBidAmount(0, {}, auction_id, i);
+        td3.innerText = output.asOk;
+
+        const td4 = document.createElement("td");
         const increase_link = document.createElement("a");
         increase_link.href = "increase_bid.html?auction_id=" + auction_id + "&bid_id=" + i;
-        td3.appendChild(increase_link);
+        td4.appendChild(increase_link);
 
         const tr = document.createElement("tr");
         tr.appendChild(td1);
@@ -94,19 +98,20 @@ async function new_bid() {
 
     var values = Object.values(document.forms.new_bid_form)
     const price = Number(values[0].value);
-    const sender = values[1].value;
+    const amount = Number(values[1].value);
+    const sender = values[2].value;
     
     await init_contract();
     const web3FromAddress = await init_ext();
 
-    const { gasRequired } = await contract.query.makeABid(0, { value: price }, auction_id);
+    const { gasRequired } = await contract.query.makeABid(0, { value: price }, auction_id, amount);
 
     const injector = await web3FromAddress(sender)
 
     const gasLimit = gasRequired * 2;
     const storageDepositLimit = null;
     contract.tx
-        .makeABid({ value: price, storageDepositLimit, gasLimit }, auction_id)
+        .makeABid({ value: price, storageDepositLimit, gasLimit }, auction_id, amount)
         .signAndSend(sender, { signer: injector.signer }, ({status, events}) => {
             if (status.isOk) { 
                 alert("OK");
@@ -230,23 +235,24 @@ async function new_auction() {
     var values = Object.values(document.forms.new_auction_form)
     const name = values[0].value;
     const description = values[1].value;
-    const start_time = Date.parse(values[2].value);
-    const finish_from = Date.parse(values[3].value);
-    const finish_to = Date.parse(values[4].value);
-    const starting_price = values[5].value;
-    const sender = values[6].value;
+    const amount = values[2].value;
+    const start_time = Date.parse(values[3].value);
+    const finish_from = Date.parse(values[4].value);
+    const finish_to = Date.parse(values[5].value);
+    const starting_price = values[6].value;
+    const sender = values[7].value;
     
     await init_contract();
     const web3FromAddress = await init_ext();
     
-    const { gasRequired } = await contract.query.createNewAuction(0, {}, name, description, start_time, finish_from, finish_to, starting_price);
+    const { gasRequired } = await contract.query.createNewAuction(0, {}, name, description, amount, start_time, finish_from, finish_to, starting_price);
 
     const injector = await web3FromAddress(sender)
 
     const gasLimit = gasRequired * 2;
     const storageDepositLimit = null;
     contract.tx
-        .createNewAuction({ storageDepositLimit, gasLimit }, name, description, start_time, finish_from, finish_to, starting_price)
+        .createNewAuction({ storageDepositLimit, gasLimit }, name, description, amount, start_time, finish_from, finish_to, starting_price)
         .signAndSend(sender, { signer: injector.signer }, ({status, events}) => {
             if (status.isOk) { 
                 status_field.innerText = JSON.stringify(status.asOk);
